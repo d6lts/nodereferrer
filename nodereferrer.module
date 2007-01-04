@@ -94,14 +94,15 @@ function nodereferrer_field($op, &$node, $field, &$node_field, $teaser, $page) {
     
     case 'delete': 
     case 'update':
-      // clear cache on nodes I refer to.
-      
-
       // clear cache on nodes that refer to me.
       $types = array_values($field['referrer_types']);
       $fields = array_values($field['referrer_fields']);
+      
+      // clear any modules referring to me as my title or other data may change. 
+      // and nodereference doesn't clear the cache yet.
       foreach (nodereferrer_referrers($node->nid, $fields, $types) as $delta => $item) {
-        cache_clear_all('content:'. $item->nid .':'. $item->vid);
+        $cid = 'content:'. $item->nid .':'. $item->vid;
+        cache_clear_all($cid);
       }
       return;
   }
@@ -187,9 +188,10 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
   }
   $fields = content_fields();
   $values = array();
-  foreach($fieldnames as $fieldname) {
-    $db_info = content_database_info($fields[$fieldname]);
 
+  foreach($fieldnames as $fieldname) {
+    $db_info = content_database_info($fields[$fieldname]);    
+ 
     $query = "SELECT       n.nid, n.vid, n.title
               FROM         {" . $db_info['table'] . "} nr
               INNER JOIN   {node} n ON n.vid = nr.vid AND n.status = 1 ". $filter_nodetypes ."
@@ -197,7 +199,6 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
               ORDER BY     n.created DESC";
 
     $query = db_rewrite_sql($query);
-
     $result = db_query($query, $nid); 
 
     while ($value = db_fetch_object($result)) {
@@ -208,15 +209,45 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
   return $values;
 }
 
-function nodereferrer_nodeapi($op, $node) { 
+function nodereferrer_nodeapi($node, $op) { 
   switch ($op) {
     case 'update':
     case 'delete':
-      //clear cache on all nodes that refer to updated nodes. I should figure out  
-      //some better targeting, or get field level caching.
-      foreach (nodereferrer_referrers($node->nid, $fields, $types) as $delta => $item) {
-        cache_clear_all('content:'. $item->nid .':'. $item->vid);
+      // clear cache on all nodes that a referenced by the node being updated or deleted.
+
+      // get names of all nodereference fields.
+      $fields = array();
+      $result = db_query('SELECT field_name FROM {node_field_instance} WHERE widget_type LIKE "%nodereference%"');
+      while($row = db_fetch_object($result)) {
+        $fields[] = $row->field_name;
       }
+
+      // exit if there aren't any node reference field instances.
+      if (!count($fields)) {
+        return;
+      }
+    
+      // cast our node as an array so we can use $fieldname as a key.
+      $node = (array)$node;
+      foreach($fields as $fieldname) {
+        // make sure we have some goodies to iterate over.
+        if (isset($node[$fieldname]) && count($node[$fieldname])) {
+          // traverse the field clear any nids that reference it, all versions(wildcard).
+          foreach($node[$fieldname] as $delta => $item) {
+            $cid = 'content:'.  $item['nid'];
+            cache_clear_all('content:'. $item['nid'], TRUE);
+          }
+        }
+      }
+
+      // clear cache on all nodes the reference this node.
+      //  @todo check all the back referenced nodes... Any node that refers to me should have its 
+      //  content cache cleared as well. field level caching would make this easier, since
+      //  we could change the cid to make it easier to wildcard targets.
+      
+
+
+     
   }
 }
 
