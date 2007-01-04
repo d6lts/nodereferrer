@@ -1,0 +1,222 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Defines a field type for backlinking referencing nodes.
+ * @todo 
+ *    -clear content cache with nodeapi.
+ *    -query nids for access on load/view..
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function nodereferrer_help($section) {
+  switch ($section) {
+    case 'admin/modules#description':
+      return t('<strong>CCK:</strong> Defines a field type for displaying referrers to a node. <em>Note: Requires content.module.</em>');
+  }
+}
+
+/**
+ * Implementation of hook_field_info().
+ */
+function nodereferrer_field_info() {
+  return array(
+    'nodereferrer' => array('label' => t('Node Referrers')),
+  );
+}
+
+/**
+ * Implementation of hook_field_settings().
+ */
+function nodereferrer_field_settings($op, $field) {
+  switch ($op) {
+    case 'form':
+      $form = array();
+      $form['referrer_types'] = array(
+        '#type' => 'checkboxes',
+        '#title' => t('Referring Node Types'),
+        '#multiple' => TRUE,
+        '#default_value' => isset($field['referrer_types']) ? $field['referrer_types'] : array(),
+        '#options' => node_get_types(),
+      );
+
+      $options = array(); 
+      $types = content_fields();
+      foreach($types as $type) {
+        if ($type['type'] == 'nodereference') {
+          $options[$type['field_name']] = $type['widget']['label']; 
+        }
+      }
+
+      $form['referrer_fields'] = array (
+        '#type' => 'checkboxes',
+        '#title' => t('Referring Fields'),
+        '#multiple' => TRUE,
+        '#default_value' => isset($field['referrer_fields']) ? $field['referrer_fields'] : array(),
+        '#options' => $options,
+      ); 
+      return $form;
+      
+    case 'save':
+      return array('referrer_types', 'referrer_fields');
+  }
+}
+
+/**
+ * Implementation of hook_field().
+ */
+function nodereferrer_field($op, &$node, $field, &$node_field, $teaser, $page) {
+  switch ($op) {
+    case 'view':
+      $items = array();
+      foreach ($node_field as $delta => $item) {
+        if (node_access('view', $item)) {
+          $items[$delta]['view'] = content_format($field, $item);
+        }
+      }
+      return theme('field', $node, $field, $items, $teaser, $page);
+
+    case 'load':
+      $types = array_values($field['referrer_types']);
+      $fields = array_values($field['referrer_fields']);
+      $values = nodereferrer_referrers($node->nid, $fields, $types);
+      //$node_field = array(); -- do I really need to initialize... do I get node_field
+      // even though this module doesn't have any db fields.
+      $node_field = array(); 
+      // Pass referring node objects into CCK content_load() cache. 24/08/2006 sun
+      foreach ($values as $nid => $rnode) {
+        $node_field[] = $rnode;
+      }
+      return array($field['field_name'] => $node_field);
+    
+    case 'delete': 
+    case 'update':
+      // clear cache on nodes I refer to.
+      
+
+      // clear cache on nodes that refer to me.
+      $types = array_values($field['referrer_types']);
+      $fields = array_values($field['referrer_fields']);
+      foreach (nodereferrer_referrers($node->nid, $fields, $types) as $delta => $item) {
+        cache_clear_all('content:'. $item->nid .':'. $item->vid);
+      }
+      return;
+  }
+}
+
+/**
+ * Implementation of hook_field_formatter_info().
+ */
+function nodereferrer_field_formatter_info() {
+  return array(
+    'default' => array(
+      'label' => 'Link (Default)',
+      'field types' => array('nodereferrer'),
+    ),
+    'plain' => array(
+      'label' => 'Plain Text',
+      'field types' => array('nodereferrer'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_field_formatter().
+ */
+function nodereferrer_field_formatter($field, $item, $formatter, $node) {
+  switch ($formatter) {
+    case 'plain':
+      return strip_tags($item->title);
+    
+    default:
+      return l($item->title, 'node/'. $item->nid);
+  }
+}
+
+
+/**
+ * Implementation of hook_widget_info().
+ */
+function nodereferrer_widget_info() {
+  return array(
+    'nodereferrer_list' => array(
+      'label' => t('Read-Only List'),
+      'field types' => array('nodereferrer'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_widget().
+ */
+function nodereferrer_widget($op, &$node, $field, &$node_field) {
+
+  // for some reason widgets must implement a form for them to work...
+  // I'm not sure that this is ideal for a set and forget service 
+  // automated field, something in CCK in content_admin.inc:content_admin_field_overview_form
+  // need to be re-thunk I think.
+
+  switch ($op) {
+    case 'form':
+      $form[$field['field_name']] = array(
+          '#type' => 'hidden',
+          '#value' => 'nodereferrer',
+      );
+      return $form;
+  }
+  // I do nothing. I'm a read only thing... not too into the widgets.
+}
+
+
+/**
+ * Get an array of referrer nids, by node.type & field.type
+ * @param nid
+ *     the nid we want to find referres for
+ * @param fieldnames 
+ *     array of fieldnames to be checked for referrers
+ * @param nodetypes
+ *     array of node types to be checked for referrers
+ */
+
+function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array()) {
+  if ($nodetypes) {
+    $filter_nodetypes = "AND n.type IN ('". implode("', '", $nodetypes) ."')"; 
+  }
+  $fields = content_fields();
+  $values = array();
+  foreach($fieldnames as $fieldname) {
+    $db_info = content_database_info($fields[$fieldname]);
+
+    $query = "SELECT       n.nid, n.vid, n.title
+              FROM         {" . $db_info['table'] . "} nr
+              INNER JOIN   {node} n ON n.vid = nr.vid AND n.status = 1 ". $filter_nodetypes ."
+              WHERE        nr." . $db_info['columns']['nid']['column'] . " = %d
+              ORDER BY     n.created DESC";
+
+    $query = db_rewrite_sql($query);
+
+    $result = db_query($query, $nid); 
+
+    while ($value = db_fetch_object($result)) {
+      // avoid duplicate referrers by using nid as key
+      $values[$value->nid] = $value;
+    }
+  }
+  return $values;
+}
+
+function nodereferrer_nodeapi($op, $node) { 
+  switch ($op) {
+    case 'update':
+    case 'delete':
+      //clear cache on all nodes that refer to updated nodes. I should figure out  
+      //some better targeting, or get field level caching.
+      foreach (nodereferrer_referrers($node->nid, $fields, $types) as $delta => $item) {
+        cache_clear_all('content:'. $item->nid .':'. $item->vid);
+      }
+  }
+}
+
