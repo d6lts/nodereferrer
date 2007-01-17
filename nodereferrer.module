@@ -241,7 +241,6 @@ function nodereferrer_nodeapi($node, $op) {
       $referrer_nids = array_keys($referrers);
       $nids = array_merge($nids, $referrer_nids);
 
-      drupal_set_message(print_r($nids, TRUE));
       foreach ($nids as $nid) {
         $cid = "content:$nid:";
         cache_clear_all($cid, TRUE);
