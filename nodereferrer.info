@@ -1,0 +1,5 @@
+; $Id$
+name = Node Referrer 
+description = provides a counter part to CCK's nodereference field. 
+dependencies = content nodereference
+package = CCK
