@@ -40,9 +40,9 @@ function nodereferrer_field_settings($op, $field) {
         '#title' => t('Referring Node Types'),
         '#multiple' => TRUE,
         '#default_value' => isset($field['referrer_types']) ? $field['referrer_types'] : array(),
-        '#options' => node_get_types(),
+        '#options' => node_get_types('names'),
       );
-
+      
       $options = array(); 
       $types = content_fields();
       foreach($types as $type) {
@@ -80,8 +80,8 @@ function nodereferrer_field($op, &$node, $field, &$node_field, $teaser, $page) {
       return theme('field', $node, $field, $items, $teaser, $page);
 
     case 'load':
-      $types = array_values($field['referrer_types']);
-      $fields = array_values($field['referrer_fields']);
+      $types = array_values(array_filter($field['referrer_types']));
+      $fields = array_values(array_filter($field['referrer_fields']));
       $values = nodereferrer_referrers($node->nid, $fields, $types);
       //$node_field = array(); -- do I really need to initialize... do I get node_field
       // even though this module doesn't have any db fields.
@@ -95,14 +95,14 @@ function nodereferrer_field($op, &$node, $field, &$node_field, $teaser, $page) {
     case 'delete': 
     case 'update':
       // clear cache on nodes that refer to me.
-      $types = array_values($field['referrer_types']);
-      $fields = array_values($field['referrer_fields']);
+      $types = array_values(array_filter($field['referrer_types']));
+      $fields = array_values(array_filter($field['referrer_fields']));
       
       // clear any modules referring to me as my title or other data may change. 
       // and nodereference doesn't clear the cache yet.
       foreach (nodereferrer_referrers($node->nid, $fields, $types) as $delta => $item) {
-        $cid = 'content:'. $item->nid .':'. $item->vid;
-        cache_clear_all($cid);
+        $cid = 'content:'. $item['nid'] .':'. $item['vid'];
+        cache_clear_all($cid, 'cache_page');
       }
       return;
   }
@@ -130,10 +130,10 @@ function nodereferrer_field_formatter_info() {
 function nodereferrer_field_formatter($field, $item, $formatter, $node) {
   switch ($formatter) {
     case 'plain':
-      return strip_tags($item->title);
+      return strip_tags($item['title']);
     
     default:
-      return l($item->title, 'node/'. $item->nid);
+      return l($item['title'], 'node/'. $item['nid']);
   }
 }
 
@@ -206,9 +206,9 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
       $query = db_rewrite_sql($query);
       $result = db_query($query, $nid); 
 
-      while ($value = db_fetch_object($result)) {
+      while ($value = db_fetch_array($result)) {
         // avoid duplicate referrers by using nid as key
-        $values[$value->nid] = $value;
+        $values[$value['nid']] = $value;
       }
     }
   }
@@ -217,6 +217,7 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
 
 function nodereferrer_nodeapi($node, $op) { 
   switch ($op) {
+    case 'insert':
     case 'update':
     case 'delete':
       // Clear content cache to help maintain proper display of nodes.
@@ -243,7 +244,8 @@ function nodereferrer_nodeapi($node, $op) {
 
       foreach ($nids as $nid) {
         $cid = "content:$nid:";
-        cache_clear_all($cid, TRUE);
+        // define a table to delete from or else this complains
+        cache_clear_all($cid, 'cache_content', TRUE);
       }      
   }
 }
