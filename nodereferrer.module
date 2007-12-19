@@ -108,9 +108,16 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
         
         $pager =  theme('pager', array(), $limit, $element);
       }
+
+      // get the context
+      $context = $teaser ? 'teaser' : 'full';
+
+      // get the formatter
+      $formatter = isset($field['display_settings'][$context]['format']) ? $field['display_settings'][$context]['format'] : 'default';
+      
       foreach ($items as $delta => $item) {
         if (node_access('view', $item)) {
-          $items[$delta]['view'] = content_format($field, $item);
+          $items[$delta]['view'] = content_format($field, $item, $formatter);
         }
       }
       return theme('field', $node, $field, $items, $teaser, $page) . $pager;
@@ -124,7 +131,7 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
       $items = array(); 
       // Pass referring node objects into CCK content_load() cache. 24/08/2006 sun
       foreach ($values as $nid => $rnode) {
-        $items = $rnode;
+        $items[] = $rnode;
       }
       return array($field['field_name'] => $items);
     
