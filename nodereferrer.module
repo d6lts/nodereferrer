@@ -33,6 +33,9 @@ function nodereferrer_field_info() {
  */
 function nodereferrer_field_settings($op, $field) {
   switch ($op) {
+    case 'callbacks':
+      return array('view' => CONTENT_CALLBACK_CUSTOM);
+
     case 'form':
       $form = array();
       $form['referrer_types'] = array(
@@ -58,26 +61,59 @@ function nodereferrer_field_settings($op, $field) {
         '#default_value' => isset($field['referrer_fields']) ? $field['referrer_fields'] : array(),
         '#options' => $options,
       ); 
+
+      $form['referrer_nodes_per_page'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Referrers Per Page'),
+        '#description' => t('Referring nodes to display per page. 0 for no paging.'),
+        '#default_value' => isset($field['referrer_nodes_per_page']) ? $field['referrer_nodes_per_page'] : 0,
+      );
       return $form;
       
     case 'save':
-      return array('referrer_types', 'referrer_fields');
+      return array('referrer_types', 'referrer_fields', 'referrer_nodes_per_page', );
   }
 }
 
 /**
  * Implementation of hook_field().
  */
-function nodereferrer_field($op, &$node, $field, &$node_field, $teaser, $page) {
+function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
+  static $element=3;
+
   switch ($op) {
     case 'view':
-      $items = array();
-      foreach ($node_field as $delta => $item) {
+      $pager = '';
+      
+      if ($field['referrer_nodes_per_page']) {
+        // Unique Element for the pager.
+        $element++;
+  
+        $limit = $field['referrer_nodes_per_page'];
+
+        // Fake the values set by pager query... 
+        global $pager_page_array, $pager_total, $pager_total_items;
+        $page = isset($_GET['page']) ? $_GET['page'] : ''; 
+
+        // Convert comma-separated $page to an array, used by other functions.
+        $pager_page_array = explode(',', $page);
+
+        // We calculate the total of pages as ceil(items / limit).
+        $pager_total_items[$element] = count($items);
+        $pager_total[$element] = ceil($pager_total_items[$element] / $limit);
+        $pager_page_array[$element] = max(0, min((int)$pager_page_array[$element], ((int)$pager_total[$element]) - 1));
+
+        // only display the select elements.
+        $items = array_slice($items, $pager_page_array[$element] * $limit, $limit);
+        
+        $pager =  theme('pager', array(), $limit, $element);
+      }
+      foreach ($items as $delta => $item) {
         if (node_access('view', $item)) {
           $items[$delta]['view'] = content_format($field, $item);
         }
       }
-      return theme('field', $node, $field, $items, $teaser, $page);
+      return theme('field', $node, $field, $items, $teaser, $page) . $pager;
 
     case 'load':
       $types = array_values(array_filter($field['referrer_types']));
@@ -85,12 +121,12 @@ function nodereferrer_field($op, &$node, $field, &$node_field, $teaser, $page) {
       $values = nodereferrer_referrers($node->nid, $fields, $types);
       //$node_field = array(); -- do I really need to initialize... do I get node_field
       // even though this module doesn't have any db fields.
-      $node_field = array(); 
+      $items = array(); 
       // Pass referring node objects into CCK content_load() cache. 24/08/2006 sun
       foreach ($values as $nid => $rnode) {
-        $node_field[] = $rnode;
+        $items = $rnode;
       }
-      return array($field['field_name'] => $node_field);
+      return array($field['field_name'] => $items);
     
     case 'delete': 
     case 'update':
@@ -114,13 +150,22 @@ function nodereferrer_field($op, &$node, $field, &$node_field, $teaser, $page) {
 function nodereferrer_field_formatter_info() {
   return array(
     'default' => array(
-      'label' => 'Link (Default)',
+      'label' => 'Node Title Link (Default)',
       'field types' => array('nodereferrer'),
     ),
     'plain' => array(
-      'label' => 'Plain Text',
+      'label' => 'Node Title Plain Text',
       'field types' => array('nodereferrer'),
     ),
+    'teaser' => array(
+      'label' => 'Node Teaser',
+      'field types' => array('nodereferrer'),
+    ),
+   'full' => array(
+      'label' => 'Node Body',
+      'field types' => array('nodereferrer'),
+    ),
+ 
   );
 }
 
@@ -131,9 +176,16 @@ function nodereferrer_field_formatter($field, $item, $formatter, $node) {
   switch ($formatter) {
     case 'plain':
       return strip_tags($item['title']);
-    
+
+    case 'teaser':
+      return node_view(node_load($item['nid']), TRUE);    
+
+    case 'full':
+      return node_view(node_load($item['nid']));
+
     default:
       return l($item['title'], 'node/'. $item['nid']);
+
   }
 }
 
