@@ -104,7 +104,9 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
         $pager_page_array[$element] = max(0, min((int)$pager_page_array[$element], ((int)$pager_total[$element]) - 1));
 
         // only display the select elements.
-        $items = array_slice($items, $pager_page_array[$element] * $limit, $limit);
+        if (is_array($items)) {
+          $items = array_slice($items, $pager_page_array[$element] * $limit, $limit);
+        }
         
         $pager =  theme('pager', array(), $limit, $element);
       }
