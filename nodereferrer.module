@@ -116,7 +116,7 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
 
       // get the formatter
       $formatter = isset($field['display_settings'][$context]['format']) ? $field['display_settings'][$context]['format'] : 'default';
-      
+    
       foreach ($items as $delta => $item) {
         if (node_access('view', $item)) {
           $items[$delta]['view'] = content_format($field, $item, $formatter);
@@ -135,6 +135,7 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
       foreach ($values as $nid => $rnode) {
         $items[] = $rnode;
       }
+
       return array($field['field_name'] => $items);
     
     case 'delete': 
@@ -221,11 +222,16 @@ function nodereferrer_widget($op, &$node, $field, &$node_field) {
   // automated field, something in CCK in content_admin.inc:content_admin_field_overview_form
   // need to be re-thunk I think.
 
+  // token module tries to use the form input.. grr... so lets structure it like
+  // an item...
+
   switch ($op) {
     case 'form':
-      $form[$field['field_name']] = array(
-          '#type' => 'hidden',
-          '#value' => 'nodereferrer',
+     
+      $form[$field['field_name']]= array(
+	'#tree' => TRUE,
+	'0' => array(
+	),
       );
       return $form;
   }
