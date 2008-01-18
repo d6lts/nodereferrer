@@ -118,7 +118,8 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
       $formatter = isset($field['display_settings'][$context]['format']) ? $field['display_settings'][$context]['format'] : 'default';
     
       foreach ($items as $delta => $item) {
-        if (node_access('view', $item)) {
+	$access_node = node_load($item['nid']);
+        if ($access_node && node_access('view', $access_node)) {
           $items[$delta]['view'] = content_format($field, $item, $formatter);
         }
       }
