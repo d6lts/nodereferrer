@@ -50,7 +50,7 @@ function nodereferrer_field_settings($op, $field) {
       $types = content_fields();
       foreach($types as $type) {
         if ($type['type'] == 'nodereference') {
-          $options[$type['field_name']] = $type['widget']['label']; 
+          $options[$type['field_name']] = $type['field_name'] .' ('. $type['widget']['label'] .')';
         }
       }
 
