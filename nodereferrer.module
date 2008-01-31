@@ -68,10 +68,18 @@ function nodereferrer_field_settings($op, $field) {
         '#description' => t('Referring nodes to display per page. 0 for no paging.'),
         '#default_value' => isset($field['referrer_nodes_per_page']) ? $field['referrer_nodes_per_page'] : 0,
       );
+
+      $form['referrer_order'] = array(
+        '#type' => 'select',
+        '#title' => t('Refferer Sort Order'),
+        '#options' => array('DESC' => t('Reverse Chronological Order'), 'ASC' =>  t('Chronological Order')),
+        '#default_value' => isset($field['referrer_order']) ? $field['referrer_order'] : 'DESC',
+      );
+
       return $form;
       
     case 'save':
-      return array('referrer_types', 'referrer_fields', 'referrer_nodes_per_page', );
+      return array('referrer_types', 'referrer_fields', 'referrer_nodes_per_page', 'referrer_order');
   }
 }
 
@@ -128,7 +136,8 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
     case 'load':
       $types = array_values(array_filter($field['referrer_types']));
       $fields = array_values(array_filter($field['referrer_fields']));
-      $values = nodereferrer_referrers($node->nid, $fields, $types);
+      $order = $field['referrer_order'];
+      $values = nodereferrer_referrers($node->nid, $fields, $types, $order);
       //$node_field = array(); -- do I really need to initialize... do I get node_field
       // even though this module doesn't have any db fields.
       $items = array(); 
@@ -250,7 +259,7 @@ function nodereferrer_widget($op, &$node, $field, &$node_field) {
  *     array of node types to be checked for referrers
  */
 
-function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array()) {
+function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array(), $order = 'DESC') {
   if ($nodetypes) {
     $filter_nodetypes = "AND n.type IN ('". implode("', '", $nodetypes) ."')"; 
   }
@@ -269,7 +278,7 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
                 FROM         {" . $db_info['table'] . "} nr
                 INNER JOIN   {node} n ON n.vid = nr.vid AND n.status = 1 ". $filter_nodetypes ."
                 WHERE        nr." . $db_info['columns']['nid']['column'] . " = %d
-                ORDER BY     n.created DESC";
+                ORDER BY     n.created ". $order;
       
       $query = db_rewrite_sql($query);
       $result = db_query($query, $nid); 
