@@ -1,6 +1,8 @@
 <?php
 // $Id$
 
+
+
 /**
  * @file
  * Defines a field type for backlinking referencing nodes.
@@ -65,7 +67,12 @@ function nodereferrer_field_settings($op, $field) {
       $form['referrer_order'] = array(
         '#type' => 'select',
         '#title' => t('Refferer Sort Order'),
-        '#options' => array('DESC' => t('Reverse Chronological Order'), 'ASC' =>  t('Chronological Order')),
+        '#options' => array(
+          'CREATED_ASC' =>  t('Chronological Order'),
+          'CREATED_DESC' => t('Reverse Chronological Order'),
+          'TITLE_ASC' =>  t('Title Order'),
+          'TITLE_DESC' => t('Reverse Title Order'),
+        ),
         '#default_value' => isset($field['referrer_order']) ? $field['referrer_order'] : 'DESC',
       );
 
@@ -260,7 +267,29 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
   if (!count($fieldnames)) {
     $fieldnames = array_keys($fields);
   }
-
+  
+  switch ($order) {
+    case 'TITLE_ASC':
+      $order = 'n.title ASC';
+      break;
+      
+    case 'TITLE_DESC':
+      $order = 'n.title DESC';
+      break;
+      
+    case 'ASC':
+    case 'CREATED_ASC':
+      $order = 'n.created ASC';
+      break;
+    
+    default :
+    case 'DESC':
+    case 'CREATED_DESC':
+      $order = 'n.created DESC';
+      break;
+  }
+  
+  
   $values = array();
   foreach($fieldnames as $fieldname) {
     if ($fields[$fieldname]['type'] == 'nodereference') {
@@ -270,7 +299,7 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
                 FROM         {" . $db_info['table'] . "} nr
                 INNER JOIN   {node} n ON n.vid = nr.vid AND n.status = 1 ". $filter_nodetypes ."
                 WHERE        nr." . $db_info['columns']['nid']['column'] . " = %d
-                ORDER BY     n.created ". $order;
+                ORDER BY     ". $order;
       
       $query = db_rewrite_sql($query);
       $result = db_query($query, $nid); 
