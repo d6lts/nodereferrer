@@ -46,14 +46,7 @@ function nodereferrer_field_settings($op, $field) {
         '#options' => node_get_types('names'),
       );
       
-      $options = array(); 
-      $types = content_fields();
-      foreach($types as $type) {
-        if ($type['type'] == 'nodereference') {
-          $options[$type['field_name']] = $type['field_name'] .' ('. $type['widget']['label'] .')';
-        }
-      }
-
+      $options = nodereferrer_nodereference_field_options();
       $form['referrer_fields'] = array (
         '#type' => 'checkboxes',
         '#title' => t('Referring Fields'),
@@ -126,7 +119,7 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
       $formatter = isset($field['display_settings'][$context]['format']) ? $field['display_settings'][$context]['format'] : 'default';
     
       foreach ($items as $delta => $item) {
-	$access_node = node_load($item['nid']);
+	      $access_node = node_load($item['nid']);
         if ($access_node && node_access('view', $access_node)) {
           $items[$delta]['view'] = content_format($field, $item, $formatter);
         }
@@ -239,9 +232,8 @@ function nodereferrer_widget($op, &$node, $field, &$node_field) {
     case 'form':
      
       $form[$field['field_name']]= array(
-	'#tree' => TRUE,
-	'0' => array(
-	),
+	      '#tree' => TRUE,
+	      '0' => array(),
       );
       return $form;
   }
@@ -292,6 +284,24 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
   return $values;
 }
 
+
+/** 
+ * Helper function to create an options list of nodereference fields.
+ */
+function nodereferrer_nodereference_field_options() {
+  $options = array(); 
+  $types = content_fields();
+  foreach($types as $type) {
+    if ($type['type'] == 'nodereference') {
+      $options[$type['field_name']] = $type['field_name'] .' ('. $type['widget']['label'] .')';
+    }
+  }
+  return $options;
+}
+
+/**
+ * Implementation of hook_nodeapi
+ */
 function nodereferrer_nodeapi($node, $op) { 
   switch ($op) {
     case 'insert':
@@ -325,5 +335,124 @@ function nodereferrer_nodeapi($node, $op) {
         cache_clear_all($cid, 'cache_content', TRUE);
       }      
   }
+}
+
+/**
+ * Implementation of hook_views_tables
+ */
+function nodereferrer_views_tables() {
+  $tables['nodereferrer'] = array(
+    'filters' => array(
+      'nodereferrer_filter_field' => array(
+        'name' => t('NodeReferrer: by field'),
+        'field' => 'nid',
+        'operator' => 'nodereferrer_view_handler_operator_innotin',
+        'handler' => 'nodereferrer_view_handler_filter_field',
+        'option' => array(
+          '#type' => 'select', 
+          '#options' =>  nodereferrer_nodereference_field_options(),
+        ),
+        'help' => t('Allows views to query the node\'s references by a certain node reference field.'),
+      ),
+      'nodereferrer_filter_type' => array(
+        'name' => t('NodeReferrer: by node'),
+        'field' => 'nid',
+        'operator' => 'nodereferrer_view_handler_operator_innotin',
+        'handler' => 'nodereferrer_view_handler_filter_type',
+        'option' => array(
+          '#type' => 'select', 
+          '#options' => nodereferrer_nodereference_field_options(),
+        ),
+        'help' => t('Allows views to query the node\'s references by a certain node type.'),
+      ),
+ 
+    ),
+  );
+  return $tables;
+}
+
+function nodereferrer_view_handler_operator_innotin() {
+   return array('in' => t('IN'), 'not in' => t('NOT IN'));
+}
+
+function nodereferrer_view_handler_filter_field($op, $filter, $filterinfo, &$query) {
+  $nid = (int)$filter['value'];
+  $field = $filter['options'];
+  $fields = (empty($field)) ? array_keys(nodereferrer_nodereference_field_options()) : array($field);
+  $referrers = nodereferrer_referrers($nid, $fields);
+  $query->add_where('node.nid '. $filter['operator'] .' ('. implode(',', array_keys($referrers)) .') ');
+}
+
+function nodereferrer_view_handler_filter_node_type($op, $filter, $filterinfo, &$query) {
+  $nid = $filter['value'];
+  $fields = array_keys(nodereferrer_nodereference_field_options());
+  $node_type = $filter['options'];
+  $referrers = nodereferrer_referrers($nid, $fields, array($node_type));
+  $query->add_where('node.nid '. $filter['operator'] .' ('. implode(',', array_keys($referrers)) .') ');
+}
+
+
+/**
+ * Implementation of hook_views_arguments().
+ */  
+function nodereferrer_views_arguments() {
+  $arguments = array(
+    'nodereferrer_by_field' => array(
+      'name' => t('NodeReference Field References: ID'),
+      'handler' => t('nodereferrer_view_handler_argument_field'),
+      'option' => array(
+        '#type' => 'select', 
+        '#options' =>  nodereferrer_nodereference_field_options(),
+      ),
+      'help' => t('This argument allows views to query the nodes that refer a certain node reference by field. 
+        Specify referencing field In the options.'),
+    ),
+    'nodereferrer_by_type' => array(
+      'name' => t('Node Type References: ID'),
+      'handler' => t('nodereferrer_view_handler_argument_type'),
+      'option' => array(
+        '#type' => 'select', 
+        '#options' => node_get_types('names'),
+      ),
+      'help' => t('This argument allows views to query the nodes that refer to a certain node reference by node type. 
+        Specify node type in the options field.'),
+    ),
+ 
+  );
+  return $arguments;
+}
+
+// delegate argument handling to op specific callbacks.
+function nodereferrer_view_handler_argument_field($op, &$query, $a1, $a2 = NULL) {
+  $function = 'nodereferrer_view_handler_argument_field_'. $op;
+  if (function_exists($function)) {
+    $function($query, $a1, $a2);
+  }  
+}  
+
+function nodereferrer_view_handler_argument_field_filter(&$query, $argtype, $arg = null) {
+  $nid = (int)$arg;
+  $field = $argtype['options'];
+  $fields = (empty($field)) ? array_keys(nodereferrer_nodereference_field_options()) : array($field);
+  $referrers = nodereferrer_referrers($nid, $fields);
+  if (empty($referrers)) $referrers = array(0 => 0);
+  $query->add_where('node.nid in ('. implode(',', array_keys($referrers)) .') ');
+}
+
+// delegate argument handling to op specific callbacks.
+function nodereferrer_view_handler_argument_type($op, &$query, $a1, $a2 = NULL) {
+  $function = 'nodereferrer_view_handler_argument_type_'. $op;
+  if (function_exists($function)) {
+    $function($query, $a1, $a2);
+  }  
+}
+
+function nodereferrer_view_handler_argument_type_filter(&$query, $argtype, $arg = null) {
+  $nid = (int)$arg;
+  $fields = array_keys(nodereferrer_nodereference_field_options());
+  $node_type = $argtype['options'];
+  $referrers = nodereferrer_referrers($nid, $fields, array($node_type));
+  if (empty($referrers)) $referrers = array(0 => 0);
+  $query->add_where('node.nid in ('. implode(',', array_keys($referrers)) .') ');
 }
 
