@@ -1,7 +1,31 @@
 <?php
 //$Id$
 
+/**
+ * Implementation of hook_install().
+ */
 function nodereferrer_install() {
+  content_notify('install', 'nodereferrer');
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
+function nodereferrer_uninstall() {
+  content_notify('uninstall', 'nodereferrer');
+}
+
+/**
+ * Implementation of hook_enable().
+ */
+function nodereferrer_enable() {
+  content_notify('enable', 'nodereferrer');
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function nodereferrer_disable() {
+  content_notify('disable', 'nodereferrer');
+}
 

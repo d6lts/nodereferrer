@@ -1,5 +1,7 @@
 ; $Id$
 name = Node Referrer 
 description = provides a counter part to CCK's nodereference field. 
-dependencies = content nodereference
+core = 6.x
+dependencies[] = content
+dependencies[] = nodereference
 package = CCK
