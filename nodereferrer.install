@@ -5,6 +5,7 @@
  * Implementation of hook_install().
  */
 function nodereferrer_install() {
+  drupal_load('module', 'content');
   content_notify('install', 'nodereferrer');
 }
 
@@ -12,6 +13,7 @@ function nodereferrer_install() {
  * Implementation of hook_uninstall().
  */
 function nodereferrer_uninstall() {
+  drupal_load('module', 'content');
   content_notify('uninstall', 'nodereferrer');
 }
 
@@ -19,6 +21,7 @@ function nodereferrer_uninstall() {
  * Implementation of hook_enable().
  */
 function nodereferrer_enable() {
+  drupal_load('module', 'content');
   content_notify('enable', 'nodereferrer');
 }
 
@@ -26,6 +29,7 @@ function nodereferrer_enable() {
  * Implementation of hook_install().
  */
 function nodereferrer_disable() {
+  drupal_load('module', 'content');
   content_notify('disable', 'nodereferrer');
 }
 
