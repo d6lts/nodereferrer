@@ -106,7 +106,11 @@ function nodereferrer_field_settings($op, $field) {
       return $form;
       
     case 'save':
-      return array('referrer_types', 'referrer_fields', 'referrer_translations', 'referrer_nodes_per_page', 'referrer_pager_element', 'referrer_order');
+      $settings = array('referrer_types', 'referrer_fields', 'referrer_nodes_per_page', 'referrer_pager_element', 'referrer_order');
+      if (module_exists('translation')) {
+        $settings[] = 'referrer_translations';
+      }
+      return $settings;
   }
 }
 
@@ -222,7 +226,7 @@ function nodereferrer_theme() {
  * Generic formatter function
  */
 function nodereferrer_theme_formatter($formatter, $info) {
-  $items = $info['#item']['items'];
+  $items = isset($info['#item']['items']) ? $info['#item']['items']  : array();
   $limit = $info['#item']['limit'];
   $element = $info['#item']['element'];
   $pager = '';
