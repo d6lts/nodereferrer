@@ -6,7 +6,7 @@
 /**
  * @file
  * Defines a field type for backlinking referencing nodes.
- * @todo 
+ * @todo
  *    -clear content cache with nodeapi.
  *    -query nids for access on load/view..
  */
@@ -45,7 +45,7 @@ function nodereferrer_field_settings($op, $field) {
         $data = array();
       }
       return $data;
-      
+
     case 'callbacks':
       return array('view' => CONTENT_CALLBACK_CUSTOM);
 
@@ -58,7 +58,7 @@ function nodereferrer_field_settings($op, $field) {
         '#default_value' => is_array($field['referrer_types']) ? $field['referrer_types'] : array(),
         '#options' => node_get_types('names'),
       );
-      
+
       $options = nodereferrer_nodereference_field_options();
       $form['referrer_fields'] = array (
         '#type' => 'checkboxes',
@@ -66,8 +66,8 @@ function nodereferrer_field_settings($op, $field) {
         '#multiple' => TRUE,
         '#default_value' => is_array($field['referrer_fields']) ? $field['referrer_fields'] : array(),
         '#options' => $options,
-      ); 
-      
+      );
+
       if (module_exists('translation')) {
         $form['referrer_translations'] = array(
           '#type'  => 'checkbox',
@@ -76,7 +76,7 @@ function nodereferrer_field_settings($op, $field) {
           '#default_value' => is_int($field['referrer_translations']) ? $field['referrer_translations'] : 0,
         );
       }
-      
+
       $form['referrer_nodes_per_page'] = array(
         '#type' => 'textfield',
         '#title' => t('Referrers Per Page'),
@@ -104,7 +104,7 @@ function nodereferrer_field_settings($op, $field) {
       );
 
       return $form;
-      
+
     case 'save':
       $settings = array('referrer_types', 'referrer_fields', 'referrer_nodes_per_page', 'referrer_pager_element', 'referrer_order');
       if (module_exists('translation')) {
@@ -132,27 +132,27 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
       foreach ($values as $nid => $rnode) {
         $items[] = $rnode;
       }
-      
+
       if (count($items) == 0) {
         return array($field['field_name'] => array());
       }
-      
+
       $output = array(
         'items' => $items,
         'limit' => empty($field['referrer_nodes_per_page']) ? 0 : $field['referrer_nodes_per_page'],
         'element' => empty($field['referrer_pager_element']) ? 0 : $field['referrer_pager_element'],
         'pager' => $pager,
       );
-      
+
       return array($field['field_name'] => array($output));
-      
-    case 'delete': 
+
+    case 'delete':
     case 'update':
       // clear cache on nodes that refer to me.
       $types = array_values(array_filter($field['referrer_types']));
       $fields = array_values(array_filter($field['referrer_fields']));
-      
-      // clear any modules referring to me as my title or other data may change. 
+
+      // clear any modules referring to me as my title or other data may change.
       // and nodereference doesn't clear the cache yet.
       foreach (nodereferrer_referrers($node->nid, $fields, $types, false) as $delta => $item) {
         $cid = 'content:'. $item['nid'] .':'. $item['vid'];
@@ -230,34 +230,34 @@ function nodereferrer_theme_formatter($formatter, $info) {
   $limit = $info['#item']['limit'];
   $element = $info['#item']['element'];
   $pager = '';
-  
+
   if ($limit) {
     // Fake the values set by pager query...
     global $pager_page_array, $pager_total, $pager_total_items;
     $page = isset($_GET['page']) ? $_GET['page'] : '';
-    
+
     // Convert comma-separated $page to an array, used by other functions.
     $pager_page_array = explode(',', $page);
     // We calculate the total of pages as ceil(items / limit).
     $pager_total_items[$element] = count($items);
     $pager_total[$element] = ceil($pager_total_items[$element] / $limit);
     $pager_page_array[$element] = max(0, min((int)$pager_page_array[$element], ((int)$pager_total[$element]) - 1));
-    
+
     // only display the select elements.
     if (is_array($items)) {
       $items = array_slice($items, $pager_page_array[$element] * $limit, $limit);
     }
-    
+
     $pager =  theme('pager', array(), $limit, $element);
   }
-  
+
   $themed_items = array();
   foreach ($items as $i) {
     $i['field'] = $info; // Add some extra information the themer might like to have
     $themed_items[] = theme('nodereferrer_field_'.$formatter, $i);
   }
   $out = theme_item_list($themed_items).$pager;
-  
+
   return $out;
 }
 
@@ -291,7 +291,7 @@ function theme_nodereferrer_formatter_teaser($info) {
 }
 
 function theme_nodereferrer_field_teaser($element) {
-  return node_view(node_load($element['nid']), TRUE);    
+  return node_view(node_load($element['nid']), TRUE);
 }
 
 /**
@@ -316,7 +316,7 @@ function nodereferrer_widget_info() {
       'multiple values' => CONTENT_HANDLE_MODULE,
       'callbacks' => array(
         'default value' => CONTENT_CALLBACK_NONE,
-       ),    
+       ),
     ),
   );
 }
@@ -332,7 +332,7 @@ function nodereferrer_content_is_empty($item, $field) {
  * Get an array of referrer nids, by node.type & field.type
  * @param nid
  *     the nid we want to find referres for
- * @param fieldnames 
+ * @param fieldnames
  *     array of fieldnames to be checked for referrers
  * @param nodetypes
  *     array of node types to be checked for referrers
@@ -342,41 +342,41 @@ function nodereferrer_content_is_empty($item, $field) {
 
 function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array(), $translations = 0, $order = 'DESC') {
   if ($nodetypes) {
-    $filter_nodetypes = "AND n.type IN ('". implode("', '", $nodetypes) ."')"; 
+    $filter_nodetypes = "AND n.type IN ('". implode("', '", $nodetypes) ."')";
   }
   $fields = content_fields();
   // Set default values of fieldnames..
   if (!count($fieldnames)) {
     $fieldnames = array_keys($fields);
   }
-  
+
   switch ($order) {
     case 'TITLE_ASC':
       $order = 'n.title ASC';
       break;
-      
+
     case 'TITLE_DESC':
       $order = 'n.title DESC';
       break;
-      
+
     case 'ASC':
     case 'CREATED_ASC':
       $order = 'n.created ASC';
       break;
-    
+
     default :
     case 'DESC':
     case 'CREATED_DESC':
       $order = 'n.created DESC';
       break;
   }
-  
-  
+
+
   $values = array();
   foreach($fieldnames as $fieldname) {
     if ($fields[$fieldname]['type'] == 'nodereference') {
       $db_info = content_database_info($fields[$fieldname]);
-      
+
       if ($translations) {
         $query = "SELECT       n.nid, n.vid, n.title
                   FROM         {" . $db_info['table'] . "} nr
@@ -384,7 +384,7 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
                   INNER JOIN   {node} n ON n.vid = nr.vid AND n.status = 1 ". $filter_nodetypes ."
                   LEFT JOIN    {node} translations ON current_node.tnid > 0 AND translations.tnid = current_node.tnid
                   WHERE        (current_node.tnid = 0 AND nr." . $db_info['columns']['nid']['column'] . " = current_node.nid)
-                               OR 
+                               OR
                                (current_node.tnid > 0 AND nr." . $db_info['columns']['nid']['column'] . " = translations.nid)
                   ORDER BY     ". $order;
       } else {
@@ -394,9 +394,9 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
                   WHERE        nr." . $db_info['columns']['nid']['column'] . " = %d
                   ORDER BY     ". $order;
       }
-      
+
       $query = db_rewrite_sql($query);
-      $result = db_query($query, $nid); 
+      $result = db_query($query, $nid);
 
       while ($value = db_fetch_array($result)) {
         // avoid duplicate referrers by using nid as key
@@ -408,11 +408,11 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
 }
 
 
-/** 
+/**
  * Helper function to create an options list of nodereference fields.
  */
 function nodereferrer_nodereference_field_options() {
-  $options = array(); 
+  $options = array();
   $types = content_fields();
   foreach($types as $type) {
     if ($type['type'] == 'nodereference') {
@@ -425,7 +425,7 @@ function nodereferrer_nodereference_field_options() {
 /**
  * Implementation of hook_nodeapi
  */
-function nodereferrer_nodeapi($node, $op) { 
+function nodereferrer_nodeapi($node, $op) {
   switch ($op) {
     case 'prepare':
     case 'insert':
@@ -435,19 +435,19 @@ function nodereferrer_nodeapi($node, $op) {
       $nids = array();
       $type = content_types($node->type);
       foreach ($type['fields'] as $field) {
-        // Add referenced nodes to nids. This will clean up nodereferrer fields 
+        // Add referenced nodes to nids. This will clean up nodereferrer fields
         // when the referencing node is updated.
         if ($field['type'] == 'nodereference') {
           $node_field = isset($node->$field['field_name']) ? $node->$field['field_name'] : array();
           foreach($node_field as $delta => $item) {
-            $nids[$item['nid']] = $item['nid'];    
+            $nids[$item['nid']] = $item['nid'];
           }
         }
       }
 
       // Clear Content cache for nodes that reference the node that is being updated.
       // This will keep nodereference fields up to date when referred nodes are
-      // updated. @note this currenlty doesn't work all that well since nodereference 
+      // updated. @note this currenlty doesn't work all that well since nodereference
       // doesn't respect publishing states or access control.
       $referrers = nodereferrer_referrers($node->nid);
       $referrer_nids = array_keys($referrers);
@@ -457,7 +457,7 @@ function nodereferrer_nodeapi($node, $op) {
         $cid = "content:$nid:";
         // define a table to delete from or else this complains
         cache_clear_all($cid, 'cache_content', TRUE);
-      }      
+      }
   }
 }
 
