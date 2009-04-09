@@ -51,6 +51,15 @@ function nodereferrer_field_settings($op, $field) {
 
     case 'form':
       $form = array();
+      $form['required'] = array(
+        '#type' => 'hidden',
+        '#value' => FALSE,
+      );
+      $form['multiple'] = array(
+        '#type' => 'hidden',
+        '#value' => 0,
+      );
+
       $form['referrer_types'] = array(
         '#type' => 'checkboxes',
         '#title' => t('Referring Node Types'),
@@ -325,7 +334,7 @@ function nodereferrer_widget_info() {
  * Implementation of hook_content_is_empty
  */
 function nodereferrer_content_is_empty($item, $field) {
-  return FALSE;
+  return TRUE;
 }
 
 /**
