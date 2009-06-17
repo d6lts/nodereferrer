@@ -51,6 +51,16 @@ function nodereferrer_field_settings($op, $field) {
 
     case 'form':
       $form = array();
+      // Hide unused options
+      $form['required'] = array(
+        '#type' => 'hidden',
+        '#value' => FALSE,
+      );
+      $form['multiple'] = array(
+        '#type' => 'hidden',
+        '#value' => 0,
+      );
+
       $form['referrer_types'] = array(
         '#type' => 'checkboxes',
         '#title' => t('Referring Node Types'),
@@ -125,10 +135,8 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
       $order = $field['referrer_order'];
       $translations = isset($field['referrer_translations']) ? $field['referrer_translations'] : 0;
       $values = nodereferrer_referrers($node->nid, $fields, $types, $translations, $order);
-      //$node_field = array(); -- do I really need to initialize... do I get node_field
-      // even though this module doesn't have any db fields.
-      $items = array();
       // Pass referring node objects into CCK content_load() cache. 24/08/2006 sun
+      $items = array();
       foreach ($values as $nid => $rnode) {
         $items[] = $rnode;
       }
@@ -141,7 +149,7 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
         'items' => $items,
         'limit' => empty($field['referrer_nodes_per_page']) ? 0 : $field['referrer_nodes_per_page'],
         'element' => empty($field['referrer_pager_element']) ? 0 : $field['referrer_pager_element'],
-        'pager' => $pager,
+        'pager' => '',
       );
 
       return array($field['field_name'] => array($output));
@@ -325,7 +333,7 @@ function nodereferrer_widget_info() {
  * Implementation of hook_content_is_empty
  */
 function nodereferrer_content_is_empty($item, $field) {
-  return FALSE;
+  return TRUE;
 }
 
 /**
@@ -343,6 +351,9 @@ function nodereferrer_content_is_empty($item, $field) {
 function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array(), $translations = 0, $order = 'DESC') {
   if ($nodetypes) {
     $filter_nodetypes = "AND n.type IN ('". implode("', '", $nodetypes) ."')";
+  }
+  else {
+    $filter_nodetypes = '';
   }
   $fields = content_fields();
   // Set default values of fieldnames..
@@ -449,9 +460,11 @@ function nodereferrer_nodeapi($node, $op) {
       // This will keep nodereference fields up to date when referred nodes are
       // updated. @note this currenlty doesn't work all that well since nodereference
       // doesn't respect publishing states or access control.
-      $referrers = nodereferrer_referrers($node->nid);
-      $referrer_nids = array_keys($referrers);
-      $nids = array_merge($nids, $referrer_nids);
+      if (isset($node->nid)) {
+        $referrers = nodereferrer_referrers($node->nid);
+        $referrer_nids = array_keys($referrers);
+        $nids = array_merge($nids, $referrer_nids);
+      }
 
       foreach ($nids as $nid) {
         $cid = "content:$nid:";
