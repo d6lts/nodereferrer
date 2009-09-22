@@ -1,6 +1,11 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * nodereferrer.module Views integration
+ */
+
 function nodereferrer_views_data_alter(&$cache) {
   $cache['node']['nodereferrer_field'] = array(
     'group' => t('Node'),
@@ -24,7 +29,7 @@ function nodereferrer_views_data_alter(&$cache) {
     'real field' => 'nid',
     'help' => t('Allows views to query the node\'s references by a certain node type.'),
     'filter' => array(
-      'handler' =>'nodereferrer_view_handler_filter_type',
+      'handler' => 'nodereferrer_view_handler_filter_type',
     ),
     'argument' => array(
       'handler' => 'nodereferrer_view_handler_argument_type',
@@ -55,7 +60,7 @@ function nodereferrer_views_data_alter(&$cache) {
 function nodereferrer_views_handlers() {
   return array(
     'info' => array(
-      'path' => drupal_get_path('module', 'nodereferrer').'/views',
+      'path' => drupal_get_path('module', 'nodereferrer') . '/views',
     ),
     'handlers' => array(
       'nodereferrer_view_handler_filter' => array(

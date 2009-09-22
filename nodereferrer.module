@@ -6,6 +6,7 @@
 /**
  * @file
  * Defines a field type for backlinking referencing nodes.
+ *
  * @todo
  *    -clear content cache with nodeapi.
  *    -query nids for access on load/view..
@@ -14,8 +15,8 @@
 /**
  * Implementation of hook_help().
  */
-function nodereferrer_help($section, $arg) {
-  switch ($section) {
+function nodereferrer_help($path, $arg) {
+  switch ($path) {
     case 'admin/modules#description':
       return t('<strong>CCK:</strong> Defines a field type for displaying referrers to a node. <em>Note: Requires content.module.</em>');
   }
@@ -41,7 +42,8 @@ function nodereferrer_field_settings($op, $field) {
         foreach ($data as $k => $v) {
           $data[$k] = array();
         }
-      } else {
+      }
+      else {
         $data = array();
       }
       return $data;
@@ -70,7 +72,7 @@ function nodereferrer_field_settings($op, $field) {
       );
 
       $options = nodereferrer_nodereference_field_options();
-      $form['referrer_fields'] = array (
+      $form['referrer_fields'] = array(
         '#type' => 'checkboxes',
         '#title' => t('Referring Fields'),
         '#multiple' => TRUE,
@@ -163,7 +165,7 @@ function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
       // clear any modules referring to me as my title or other data may change.
       // and nodereference doesn't clear the cache yet.
       foreach (nodereferrer_referrers($node->nid, $fields, $types, false) as $delta => $item) {
-        $cid = 'content:'. $item['nid'] .':'. $item['vid'];
+        $cid = 'content:' . $item['nid'] . ':' . $item['vid'];
         cache_clear_all($cid, 'cache_page');
       }
       return;
@@ -262,9 +264,9 @@ function nodereferrer_theme_formatter($formatter, $info) {
   $themed_items = array();
   foreach ($items as $i) {
     $i['field'] = $info; // Add some extra information the themer might like to have
-    $themed_items[] = theme('nodereferrer_field_'.$formatter, $i);
+    $themed_items[] = theme('nodereferrer_field_' . $formatter, $i);
   }
-  $out = theme_item_list($themed_items).$pager;
+  $out = theme('item_list', $themed_items) . $pager;
 
   return $out;
 }
@@ -277,7 +279,7 @@ function theme_nodereferrer_formatter_default($info) {
 }
 
 function theme_nodereferrer_field_default($element) {
-  return l($element['title'], 'node/'. $element['nid']);
+  return l($element['title'], 'node/' . $element['nid']);
 }
 
 /**
@@ -330,7 +332,7 @@ function nodereferrer_widget_info() {
 }
 
 /**
- * Implementation of hook_content_is_empty
+ * Implementation of hook_content_is_empty().
  */
 function nodereferrer_content_is_empty($item, $field) {
   return TRUE;
@@ -350,13 +352,13 @@ function nodereferrer_content_is_empty($item, $field) {
 
 function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array(), $translations = 0, $order = 'DESC') {
   if ($nodetypes) {
-    $filter_nodetypes = "AND n.type IN ('". implode("', '", $nodetypes) ."')";
+    $filter_nodetypes = "AND n.type IN ('" . implode("', '", $nodetypes) . "')";
   }
   else {
     $filter_nodetypes = '';
   }
   $fields = content_fields();
-  // Set default values of fieldnames..
+  // Set default values of fieldnames.
   if (!count($fieldnames)) {
     $fieldnames = array_keys($fields);
   }
@@ -384,7 +386,7 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
 
 
   $values = array();
-  foreach($fieldnames as $fieldname) {
+  foreach ($fieldnames as $fieldname) {
     if ($fields[$fieldname]['type'] == 'nodereference') {
       $db_info = content_database_info($fields[$fieldname]);
 
@@ -392,18 +394,19 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
         $query = "SELECT       n.nid, n.vid, n.title
                   FROM         {" . $db_info['table'] . "} nr
                   INNER JOIN   {node} current_node ON current_node.nid = %d
-                  INNER JOIN   {node} n ON n.vid = nr.vid AND n.status = 1 ". $filter_nodetypes ."
+                  INNER JOIN   {node} n ON n.vid = nr.vid AND n.status = 1 " . $filter_nodetypes . "
                   LEFT JOIN    {node} translations ON current_node.tnid > 0 AND translations.tnid = current_node.tnid
                   WHERE        (current_node.tnid = 0 AND nr." . $db_info['columns']['nid']['column'] . " = current_node.nid)
                                OR
                                (current_node.tnid > 0 AND nr." . $db_info['columns']['nid']['column'] . " = translations.nid)
-                  ORDER BY     ". $order;
-      } else {
+                  ORDER BY     " . $order;
+      }
+      else {
         $query = "SELECT       n.nid, n.vid, n.title
                   FROM         {" . $db_info['table'] . "} nr
-                  INNER JOIN   {node} n ON n.vid = nr.vid AND n.status = 1 ". $filter_nodetypes ."
+                  INNER JOIN   {node} n ON n.vid = nr.vid AND n.status = 1 " . $filter_nodetypes . "
                   WHERE        nr." . $db_info['columns']['nid']['column'] . " = %d
-                  ORDER BY     ". $order;
+                  ORDER BY     " . $order;
       }
 
       $query = db_rewrite_sql($query);
@@ -427,14 +430,14 @@ function nodereferrer_nodereference_field_options() {
   $types = content_fields();
   foreach($types as $type) {
     if ($type['type'] == 'nodereference') {
-      $options[$type['field_name']] = $type['field_name'] .' ('. $type['widget']['label'] .')';
+      $options[$type['field_name']] = $type['field_name'] . ' (' . $type['widget']['label'] . ')';
     }
   }
   return $options;
 }
 
 /**
- * Implementation of hook_nodeapi
+ * Implementation of hook_nodeapi().
  */
 function nodereferrer_nodeapi($node, $op) {
   switch ($op) {
@@ -450,7 +453,7 @@ function nodereferrer_nodeapi($node, $op) {
         // when the referencing node is updated.
         if ($field['type'] == 'nodereference') {
           $node_field = isset($node->$field['field_name']) ? $node->$field['field_name'] : array();
-          foreach($node_field as $delta => $item) {
+          foreach ($node_field as $delta => $item) {
             $nids[$item['nid']] = $item['nid'];
           }
         }
@@ -475,12 +478,12 @@ function nodereferrer_nodeapi($node, $op) {
 }
 
 /**
- * Implementation of hook_views_api
+ * Implementation of hook_views_api().
  */
 function nodereferrer_views_api() {
   return array(
     'api' => '2.0',
-    'path' => drupal_get_path('module', 'nodereferrer').'/views',
+    'path' => drupal_get_path('module', 'nodereferrer') . '/views',
   );
 }
 

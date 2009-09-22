@@ -1,18 +1,23 @@
 <?php
+// $Id$
+/**
+ * @file
+ * nodereferrer.module Views integration
+ */
 
 /**
  * Views handler to get fields by nodereferrer types
  */
 class nodereferrer_view_handler_field_type extends nodereferrer_view_handler_field {
-  
+
   function get_options_title() {
     return t('From node type');
   }
-  
+
   function get_options() {
     return node_get_types('names');
   }
-  
+
   function get_item_list($nid) {
     $fields = array_keys(nodereferrer_nodereference_field_options());
     $node_type = array_filter($this->options['fields']);
@@ -23,5 +28,3 @@ class nodereferrer_view_handler_field_type extends nodereferrer_view_handler_fie
     return $this->referrers($nid, $fields, $node_type);
   }
 }
-
-

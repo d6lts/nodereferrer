@@ -1,5 +1,9 @@
 <?php
 // $Id$
+/**
+ * @file
+ * nodereferrer.module Views integration
+ */
 
 class nodereferrer_view_handler_relationship extends views_handler_relationship {
   var $content_field;
@@ -8,7 +12,7 @@ class nodereferrer_view_handler_relationship extends views_handler_relationship 
     parent::construct();
 
     if (isset($this->definition['content_field_name'])) {
-    	$this->content_field = content_fields($this->definition['content_field_name']);
+      $this->content_field = content_fields($this->definition['content_field_name']);
     }
   }
 
