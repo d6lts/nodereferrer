@@ -17,7 +17,7 @@ function nodereferrer_views_data_alter(&$cache) {
       'handler' => 'nodereferrer_view_handler_field_field',
     ),
   );
-  
+
   $cache['node']['nodereferrer_type'] = array(
     'group' => t('Node'),
     'title' => t('Nodereferrer: by node type'),
@@ -31,6 +31,20 @@ function nodereferrer_views_data_alter(&$cache) {
     ),
     'field' => array(
       'handler' => 'nodereferrer_view_handler_field_type',
+    ),
+  );
+
+  $cache['node']['nodereferer_referers'] = array(
+    'group' => t('Node'),
+    'relationship' => array(
+      'title' => t('Referrers'),
+      'label' => t('Referencing Nodes'),
+      'help' => t('Add a relationship to gain access to referencing nodes.'),
+      'relationship table' => 'node',
+      'relationship field' => 'nid',
+      'base' => 'node',
+      'field' => 'nid',
+      'handler' => 'nodereferrer_view_handler_relationship',
     ),
   );
 }
@@ -71,6 +85,9 @@ function nodereferrer_views_handlers() {
       'nodereferrer_view_handler_field_type' => array(
         'parent' => 'nodereferrer_view_handler_field',
       ),
+      'nodereferrer_view_handler_relationship' => array(
+        'parent' => 'views_handler_relationship',
+      ),
     ),
   );
 }
@@ -83,9 +100,9 @@ function nodereferrer_referrers_with_translations($nid, $fields, $types, $ref_of
   if (!module_exists('translation')) {
     return nodereferrer_referrers($nid, $fields, $types);
   }
-  
+
   $ref = nodereferrer_referrers($nid, $fields, $types, $ref_of_trans);
-  
+
   if ($trans_of_ref && count($ref)) {
     $in = implode(',', array_keys($ref));
     $query = "SELECT node2.nid, node2.vid, node2.title
@@ -101,7 +118,7 @@ function nodereferrer_referrers_with_translations($nid, $fields, $types, $ref_of
       $ref[$value['nid']] = $value;
     }
   }
-  
+
   return $ref;
 }
 
