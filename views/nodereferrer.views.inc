@@ -117,7 +117,7 @@ function nodereferrer_referrers_with_translations($nid, $fields, $types, $ref_of
                     AND
                     node.tnid > 0
     ";
-    $query = db_rewrite_sql($query);
+    $query = db_rewrite_sql($query, 'node');
     $result = db_query($query);
     while ($value = db_fetch_array($result)) {
       $ref[$value['nid']] = $value;
