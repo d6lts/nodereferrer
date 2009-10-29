@@ -53,7 +53,7 @@ class nodereferrer_view_handler_argument extends views_handler_argument {
       }
       $form['multilingual']['referrers_of_translations'] = array(
         '#type'  => 'checkbox',
-        '#title' => t('Include refererrers of translations'),
+        '#title' => t('Include referrers of translations'),
         '#description' => t('If this is checked, will also include nodes that refer to translations of the given node'),
         '#default_value' => $default,
       );
