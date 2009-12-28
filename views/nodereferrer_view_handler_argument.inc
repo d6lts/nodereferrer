@@ -93,6 +93,10 @@ class nodereferrer_view_handler_argument extends views_handler_argument {
     else {
       $in = '(' . implode(', ', $list) . ')';
 
+      if (!$this->options['operator']) {
+        $this->options['operator'] = 'in';
+      }
+
       $this->query->add_where(
         $this->options['group'],
         "$this->table_alias.$this->real_field " . $this->options['operator'] . ' ' . $in
