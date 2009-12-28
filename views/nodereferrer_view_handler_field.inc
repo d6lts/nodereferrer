@@ -104,6 +104,9 @@ class nodereferrer_view_handler_field extends views_handler_field {
    */
   function render($values) {
     $list = $this->get_item_list($values->nid);
+    if ($this->options['formatter'] == 'count') {
+      return (string)count($list);
+    }
     foreach ($list as $k => $v) {
       $list[$k] = theme('nodereferrer_field_' . $this->options['formatter'], $v);
     }

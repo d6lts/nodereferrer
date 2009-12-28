@@ -197,6 +197,11 @@ function nodereferrer_field_formatter_info() {
       'field types' => array('nodereferrer'),
       'multiple values' => CONTENT_HANDLE_CORE,
     ),
+    'count' => array(
+      'label' => 'Node Count',
+      'field types' => array('nodereferrer'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+    ),
   );
 }
 
@@ -227,6 +232,9 @@ function nodereferrer_theme() {
       'arguments' => array('element' => NULL),
     ),
     'nodereferrer_field_full' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'nodereferrer_formatter_count' => array(
       'arguments' => array('element' => NULL),
     ),
   );
@@ -313,6 +321,13 @@ function theme_nodereferrer_formatter_full($info) {
 
 function theme_nodereferrer_field_full($element) {
   return node_view(node_load($element['nid']));
+}
+
+/**
+ * Theme function for 'count' field formatter.
+ */
+function theme_nodereferrer_formatter_count($info) {
+  return count($info['#item']['items']);
 }
 
 /**
