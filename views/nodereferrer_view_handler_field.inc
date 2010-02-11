@@ -38,6 +38,22 @@ class nodereferrer_view_handler_field extends views_handler_field {
       '#default_value' => empty($this->options['list']) ? 'list' : $this->options['list'],
     );
 
+    $form['limit'] = array(
+      '#type' => 'select',
+      '#multiple' => FALSE,
+      '#title' => t('Limit'),
+      '#options' => array(0 => t('Unlimited')) + drupal_map_assoc(range(1, 10)),
+      '#description' => t('Select how many referencing nodes will be displayed'),
+      '#default_value' => empty($this->options['limit']) ? 0 : $this->options['limit']
+    );
+
+    $form['randomize'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Randomize'),
+      '#description' => t('Check this box if you want the referrers to be displayed in random order'),
+      '#default_value' => empty($this->options['randomize']) ? FALSE : $this->options['randomize']
+    );
+
     $form['fields'] = array(
       '#type' => 'checkboxes',
       '#multiple' => TRUE,
@@ -106,6 +122,12 @@ class nodereferrer_view_handler_field extends views_handler_field {
     $list = $this->get_item_list($values->nid);
     if ($this->options['formatter'] == 'count') {
       return (string)count($list);
+    }
+    if ($this->options['randomize']) {
+      shuffle($list);
+    }
+    if ($this->options['limit']) {
+      $list = array_slice($list, 0, $this->options['limit']);
     }
     foreach ($list as $k => $v) {
       $list[$k] = theme('nodereferrer_field_' . $this->options['formatter'], $v);
