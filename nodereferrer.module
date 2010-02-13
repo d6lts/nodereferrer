@@ -132,8 +132,8 @@ function nodereferrer_field_settings($op, $field) {
 function nodereferrer_field($op, &$node, $field, &$items, $teaser, $page) {
   switch ($op) {
     case 'load':
-      $types = array_values(array_filter($field['referrer_types']));
-      $fields = array_values(array_filter($field['referrer_fields']));
+      $types = isset($field['referrer_types']) ? array_values(array_filter($field['referrer_types'])) : array();
+      $fields = isset($field['referrer_fields']) ? array_values(array_filter($field['referrer_fields'])) : array();
       $order = $field['referrer_order'];
       $translations = isset($field['referrer_translations']) ? $field['referrer_translations'] : 0;
       $values = nodereferrer_referrers($node->nid, $fields, $types, $translations, $order);
