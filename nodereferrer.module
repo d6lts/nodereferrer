@@ -428,6 +428,9 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
       $result = db_query($query, $nid);
 
       while ($value = db_fetch_array($result)) {
+        //Store the nodereference fieldname in the nodereferrer data in the node,
+        //so that it can be looked up without needing to load the referring node.
+        $value['referrer'] = $fieldname;
         // avoid duplicate referrers by using nid as key
         $values[$value['nid']] = $value;
       }
