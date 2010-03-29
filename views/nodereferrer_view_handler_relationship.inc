@@ -20,7 +20,7 @@ class nodereferrer_view_handler_relationship extends views_handler_relationship 
     $options = parent::option_definition();
 
     $options['referrer_delta'] = array('default' => -1);
-    $options['referrer_field'] = '';
+    $options['referrer_field'] = array('default' => '');
 
     return $options;
   }
