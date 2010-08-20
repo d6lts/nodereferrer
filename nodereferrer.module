@@ -468,13 +468,15 @@ function nodereferrer_nodeapi($node, $op) {
       // Clear content cache to help maintain proper display of nodes.
       $nids = array();
       $type = content_types($node->type);
-      foreach ($type['fields'] as $field) {
-        // Add referenced nodes to nids. This will clean up nodereferrer fields
-        // when the referencing node is updated.
-        if ($field['type'] == 'nodereference') {
-          $node_field = isset($node->$field['field_name']) ? $node->$field['field_name'] : array();
-          foreach ($node_field as $delta => $item) {
-            $nids[$item['nid']] = $item['nid'];
+      if (!empty($type['fields'])) {
+        foreach ($type['fields'] as $field) {
+          // Add referenced nodes to nids. This will clean up nodereferrer fields
+          // when the referencing node is updated.
+          if ($field['type'] == 'nodereference') {
+            $node_field = isset($node->$field['field_name']) ? $node->$field['field_name'] : array();
+            foreach ($node_field as $delta => $item) {
+              $nids[$item['nid']] = $item['nid'];
+            }
           }
         }
       }
