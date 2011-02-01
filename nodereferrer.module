@@ -378,6 +378,8 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
     $fieldnames = array_keys($fields);
   }
 
+  // For Postgresql compatibility ordered fields should be in SELECT too.
+  $select_field = '';
   switch ($order) {
     case 'TITLE_ASC':
       $order = 'n.title ASC';
@@ -390,12 +392,14 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
     case 'ASC':
     case 'CREATED_ASC':
       $order = 'n.created ASC';
+      $select_field = ', n.created';
       break;
 
     default :
     case 'DESC':
     case 'CREATED_DESC':
       $order = 'n.created DESC';
+      $select_field = ', n.created';
       break;
   }
 
@@ -406,7 +410,7 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
       $db_info = content_database_info($fields[$fieldname]);
 
       if ($translations) {
-        $query = "SELECT       n.nid, n.vid, n.title
+        $query = "SELECT       n.nid, n.vid, n.title $select_field
                   FROM         {" . $db_info['table'] . "} nr
                   INNER JOIN   {node} current_node ON current_node.nid = %d
                   INNER JOIN   {node} n ON n.vid = nr.vid AND n.status = 1 " . $filter_nodetypes . "
@@ -417,7 +421,7 @@ function nodereferrer_referrers($nid,  $fieldnames = array(), $nodetypes = array
                   ORDER BY     " . $order;
       }
       else {
-        $query = "SELECT       n.nid, n.vid, n.title
+        $query = "SELECT       n.nid, n.vid, n.title $select_field
                   FROM         {" . $db_info['table'] . "} nr
                   INNER JOIN   {node} n ON n.vid = nr.vid AND n.status = 1 " . $filter_nodetypes . "
                   WHERE        nr." . $db_info['columns']['nid']['column'] . " = %d
