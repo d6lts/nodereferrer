@@ -1,4 +1,3 @@
-; $Id$
 name = Node Referrer 
 description = provides a counter part to CCK's nodereference field. 
 core = 6.x

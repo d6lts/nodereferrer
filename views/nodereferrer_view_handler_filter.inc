@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * @file
  * nodereferrer.module Views integration
