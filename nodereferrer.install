@@ -1,34 +1,8 @@
 <?php
 
 /**
- * Implementation of hook_install().
- */
-function nodereferrer_install() {
-  drupal_load('module', 'content');
-  content_notify('install', 'nodereferrer');
-}
-
-/**
- * Implementation of hook_uninstall().
- */
-function nodereferrer_uninstall() {
-  drupal_load('module', 'content');
-  content_notify('uninstall', 'nodereferrer');
-}
-
-/**
- * Implementation of hook_enable().
- */
-function nodereferrer_enable() {
-  drupal_load('module', 'content');
-  content_notify('enable', 'nodereferrer');
-}
-
-/**
- * Implementation of hook_install().
- */
-function nodereferrer_disable() {
-  drupal_load('module', 'content');
-  content_notify('disable', 'nodereferrer');
-}
-
+ * Implements hook_update_N().
+ *
+function nodereferrer_update_7000() {
+  //
+}*/

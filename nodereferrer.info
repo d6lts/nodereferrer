@@ -1,6 +1,6 @@
-name = Node Referrer 
-description = provides a counter part to CCK's nodereference field. 
-core = 6.x
-dependencies[] = content
-dependencies[] = nodereference
-package = CCK
+name = Node Referrer
+description = provides a counter part to CCK's nodereference field.
+package = Fields
+core = 7.x
+dependencies[] = field
+dependencies[] = node_reference
