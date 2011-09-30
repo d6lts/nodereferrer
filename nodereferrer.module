@@ -566,7 +566,7 @@ function nodereferrer_theme_OLD() {
  */
 function nodereferrer_theme_formatter($formatter, $info) {
   $items = isset($info['#item']['items']) ? $info['#item']['items']  : array();
-  $limit = $info['#item']['limit'];
+  $limit = isset($info['#item']['limit']) ? $info['#item']['limit'] : 0;
   $element = $info['#item']['element'];
   $pager = '';
 
