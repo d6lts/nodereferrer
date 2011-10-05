@@ -686,14 +686,13 @@ function nodereferrer_field_is_empty($item, $field) {
  * @param translations
  *     boolean if true, also return nodes that referrer to translations of the given node
  */
-
 function nodereferrer_referrers($nid, $fieldnames = array(), $nodetypes = array(), $translations = 0, $order = 'DESC') {
   $query = new EntityFieldQuery();
   $query
     ->entityCondition('entity_type', 'node', '=')
     ->propertyCondition('status', NODE_PUBLISHED, '=');
   if ($nodetypes) {
-   	$query->entityCondition('bundle', $nodetypes, 'IN');
+    $query->entityCondition('bundle', $nodetypes, 'IN');
   }
   // Order the query.
   switch ($order) {
@@ -819,9 +818,80 @@ function _nodereferrer_nodereference_field_options() {
   return $options;
 }
 
+
+/**
+ * Implementation of hook_node_prepare().
+ */
+function nodereferrer_node_prepare($node) {
+  _nodereferrer_manage_cache($node);
+}
+
+/**
+ * Implementation of hook_node_insert().
+ */
+function nodereferrer_node_insert($node) {
+  _nodereferrer_manage_cache($node);
+}
+
+/**
+ * Implementation of hook_node_update().
+ */
+function nodereferrer_node_update($node) {
+  _nodereferrer_manage_cache($node);
+}
+
+/**
+ * Implementation of hook_node_delete().
+ */
+function nodereferrer_node_delete($node) {
+  _nodereferrer_manage_cache($node);
+}
+
+/**
+ * Helper function for Node API Hooks.
+ */
+function _nodereferrer_manage_cache($node) {
+  // Clear content cache to help maintain proper display of nodes.
+  $nids = array();
+  $type=field_info_instances('node', $node->type);
+  if (!empty($type)) {
+    foreach ($type as $field => $instance) {
+      $fieldinfo=field_info_field($field);
+      if ($fieldinfo['type'] == 'node_reference') {
+        $node_field = isset($node->$fieldinfo['field_name']) ? $node->$fieldinfo['field_name'] : array();
+        if (isset($node_field['und'])) {
+          foreach ($node_field['und'] as $delta => $item) {
+            // Add referenced nodes to nids. This will clean up nodereferrer fields
+            // when the referencing node is updated.
+            $nids[$item['nid']] = $item['nid'];
+          }
+        }
+      }
+    }
+  }
+
+  // Clear Content cache for nodes that reference the node that is being updated.
+  // This will keep nodereference fields up to date when referred nodes are
+  // updated. @note this currenlty doesn't work all that well since nodereference
+  // doesn't respect publishing states or access control.
+  if (isset($node->nid)) {
+    $referrers = nodereferrer_referrers($node->nid);
+    $referrer_nids = array_keys($referrers);
+    $nids = array_merge($nids, $referrer_nids);
+  }
+
+  foreach ($nids as $nid) {
+    $printnode=node_load($nid);
+    $cid = "field:node:$nid";
+    // define a table to delete from or else this complains
+    cache_clear_all($cid, 'cache_field', TRUE);
+  }
+}
+
 /**
  * Implementation of hook_nodeapi().
  */
+/*
 function nodereferrer_nodeapi($node, $op) {
   switch ($op) {
     case 'prepare':
@@ -861,6 +931,7 @@ function nodereferrer_nodeapi($node, $op) {
       }
   }
 }
+*/
 
 /**
  * Implements of hook_views_api().
