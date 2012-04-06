@@ -464,7 +464,6 @@ function nodereferrer_nodereference_field_options() {
  */
 function nodereferrer_nodeapi($node, $op) {
   switch ($op) {
-    case 'prepare':
     case 'insert':
     case 'update':
     case 'delete':
