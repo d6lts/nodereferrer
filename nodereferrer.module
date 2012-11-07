@@ -160,12 +160,14 @@ function nodereferrer_field_load($entity_type, $entities, $field, $instances, $l
   foreach ($entities as $id => $entity) {
     if ($instances[$id]['entity_type'] == 'node') {
       $values = nodereferrer_referrers($id, $fields, $types, $translations, $order);
-      $items[$id][0] = array(
-        'items' => $values,
-        'limit' => $settings['referrer_nodes_per_page'],
-        'element' => $settings['referrer_pager_element'],
-        'pager' => '',
-      );
+      if (!empty($values)) {
+        $items[$id][0] = array(
+          'items' => $values,
+          'limit' => $settings['referrer_nodes_per_page'],
+          'element' => $settings['referrer_pager_element'],
+          'pager' => '',
+        );
+      }
     }
   }
   /*
