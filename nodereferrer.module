@@ -475,7 +475,7 @@ function nodereferrer_nodeapi($node, $op) {
           // Add referenced nodes to nids. This will clean up nodereferrer fields
           // when the referencing node is updated.
           if ($field['type'] == 'nodereference') {
-            $node_field = isset($node->$field['field_name']) ? $node->$field['field_name'] : array();
+            $node_field = isset($node->{$field['field_name']}) ? $node->{$field['field_name']} : array();
             foreach ($node_field as $delta => $item) {
               $nids[$item['nid']] = $item['nid'];
             }
